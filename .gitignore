@@ -7,3 +7,6 @@ dist/
 .DS_Store
 leveldb-*/
 pom-private-state-*/
+midnight-level-db/
+web/dist/
+web/node_modules/
