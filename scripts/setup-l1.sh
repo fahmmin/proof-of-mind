@@ -48,4 +48,4 @@ yarn test:local
 
 echo
 echo "==> L1 verify complete"
-echo "    Next: export WALLET_SEED=<funded-preprod-seed> && yarn deploy:preprod"
+echo "    Optional: yarn deploy (uses genesis wallet on undeployed)"

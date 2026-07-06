@@ -1,7 +1,5 @@
 {
   "network": "undeployed",
-  "contractAddress": "84b6841db42efaa51fcc172f4f4803d4ddc717aa4be9fe4f8aadec8f9c7783d1",
-  "note": "Local devnet address from vitest (yarn verify:l1). For preprod: export WALLET_SEED=... && yarn deploy:preprod",
-  "verifiedAt": "2026-07-06T20:47:21.398Z",
-  "testsPassed": 4
+  "contractAddress": "5442b4f253838b5c810d70d0a55f7985930a81e8ae6ec8a5c40644706a65f4e5",
+  "deployedAt": "2026-07-06T16:49:03.082Z"
 }

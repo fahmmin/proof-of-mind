@@ -57,18 +57,23 @@ For the full stack including a new proof-server container:
 yarn env:up:all
 ```
 
-## Deploy to Preprod
+## Deploy (local undeployed)
 
-1. Start local proof server (included in `yarn env:up`) or run `midnightntwrk/proof-server:8.0.3` on port 6300.
-2. Fund a Preprod wallet via [faucet](https://faucet.preprod.midnight.network).
-3. Deploy:
+With Docker running (`yarn env:up`):
 
 ```bash
-export WALLET_SEED="<your-funded-seed>"
-yarn deploy:preprod
+yarn deploy
 ```
 
-Contract address is written to `deployment.json`.
+Uses the pre-funded **genesis wallet** on local devnet by default. Custom seeds are ignored unless `USE_CUSTOM_WALLET=1`.
+
+Contract address is written to [`deployment.json`](deployment.json).
+
+**Current deployment (undeployed):** see `deployment.json` after `yarn deploy`.
+
+### Preprod (later)
+
+Set `MIDNIGHT_NETWORK=preprod` and fund via [faucet](https://faucet.preprod.midnight.network) when you move off local devnet.
 
 ## Frontend (Level 2)
 
@@ -77,7 +82,7 @@ yarn sync:zk
 cd web && yarn install && yarn dev
 ```
 
-Open http://localhost:3000 with **Lace** (or 1AM) on **preprod**. Connect → deploy or join contract → register model → view public registry.
+Open http://localhost:3000 with **Lace** (or 1AM) on **undeployed**. Connect → deploy or join contract → register model → view public registry.
 
 ## Public state vs private witness
 
