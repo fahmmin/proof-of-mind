@@ -6,7 +6,12 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { getConfig } from './config.js';
-import { MidnightWalletProvider, syncWallet } from './wallet.js';
+import { ensureDust } from './dust.js';
+import {
+  MidnightWalletProvider,
+  resolveDeploySeed,
+  syncWallet,
+} from './wallet.js';
 import { buildProviders } from './providers.js';
 import {
   CompiledProofOfMindContract,
@@ -28,14 +33,8 @@ const PROVIDER_SECRET = new Uint8Array(32).fill(0x0a);
 const MODEL_FINGERPRINT = new Uint8Array(32).fill(0x0b);
 
 async function main() {
-  const seed = process.env['WALLET_SEED'];
-  if (!seed) {
-    throw new Error(
-      'Set WALLET_SEED to a funded preprod wallet seed before deploying.',
-    );
-  }
-
   const config = getConfig();
+  const seed = resolveDeploySeed(config.networkId);
   setNetworkId(config.networkId);
 
   const envConfig: EnvironmentConfiguration = {
@@ -49,13 +48,18 @@ async function main() {
     proofServer: config.proofServer,
   };
 
+  logger.info(`Deploying on ${config.networkId} (run yarn env:up first)`);
+  if (config.networkId === 'undeployed' && process.env['USE_CUSTOM_WALLET'] !== '1') {
+    logger.info('Using genesis wallet (pre-funded on local devnet)');
+  }
+
   const wallet = await MidnightWalletProvider.build(logger, envConfig, seed);
   await wallet.start();
   await syncWallet(logger, wallet.wallet, 600_000);
+  await ensureDust(logger, wallet.wallet, wallet.unshieldedKeystore);
 
   const providers = buildProviders(wallet, zkConfigPath, config, 'deploy');
 
-  logger.info('Deploying Proof of Mind contract to preprod...');
   const deployed: any = await (deployContract as any)(providers, {
     compiledContract: CompiledProofOfMindContract,
     privateStateId: PRIVATE_STATE_ID,

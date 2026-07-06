@@ -5,18 +5,18 @@ import {
   type ConnectedSession,
 } from './lib/midnight';
 import {
+  certifyModel,
   deployContract,
   fetchRegistryState,
   getModelCommitmentPreview,
   getOrCreateSecrets,
   registerModel,
-  certifyModel,
   ZK_PATH,
   type ModelRegistryEntry,
 } from './lib/proof-of-mind';
+import { LOCAL_INDEXER, NETWORK_ID } from './lib/network';
 
 const CONTRACT_STORAGE_KEY = 'proof-of-mind-contract';
-const NETWORK = 'preprod';
 
 function truncHex(hex: string, head = 10, tail = 8): string {
   return hex.length <= head + tail + 1
@@ -43,9 +43,7 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     if (!contractAddress) return;
-    const indexerUrl =
-      session?.config.indexerUri ??
-      'https://indexer.preprod.midnight.network/api/v4/graphql';
+    const indexerUrl = session?.config.indexerUri ?? LOCAL_INDEXER;
     try {
       const state = await fetchRegistryState(indexerUrl, contractAddress);
       setEntries(state.entries);
@@ -67,7 +65,7 @@ export default function App() {
     setError(null);
     try {
       const wallet = await detectWallet();
-      const api = await wallet.connect(NETWORK);
+      const api = await wallet.connect(NETWORK_ID);
       setSession(await createConnectedSession(api, ZK_PATH));
     } catch (e) {
       setError(String(e));

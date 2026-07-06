@@ -29,14 +29,14 @@ export const PREPROD_CONFIG: NetworkConfig = {
 };
 
 export function getConfig(): NetworkConfig {
-  const network = process.env['MIDNIGHT_NETWORK'] ?? 'local';
-  if (network === 'local') {
+  const network = process.env['MIDNIGHT_NETWORK'] ?? 'undeployed';
+  if (network === 'local' || network === 'undeployed') {
     return LOCAL_CONFIG;
   }
   if (network === 'preprod') {
     return PREPROD_CONFIG;
   }
   throw new Error(
-    `Unknown network: ${network}. Supported: 'local', 'preprod'.`,
+    `Unknown network: ${network}. Supported: 'undeployed', 'local', 'preprod'.`,
   );
 }
