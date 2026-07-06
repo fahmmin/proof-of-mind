@@ -1,0 +1,58 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+struct ModelEntry {
+  accuracyBps: Uint<16>,
+  providerCommitment: Bytes<32>
+}
+
+export ledger models: Map<Bytes<32>, ModelEntry>;
+export ledger nextModelId: Counter;
+export ledger certifications: Map<Bytes<32>, Uint<16>>;
+
+witness providerSecret(): Bytes<32>;
+witness modelFingerprint(): Bytes<32>;
+
+export circuit providerCommitment(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "pom:provider:"), sk]);
+}
+
+export circuit modelCommitment(fp: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "pom:model:"), fp]);
+}
+
+export circuit registerModel(accuracyBps: Uint<16>): [] {
+  const sk = providerSecret();
+  const fp = modelFingerprint();
+  const provCommit = providerCommitment(sk);
+  const modCommit = modelCommitment(fp);
+
+  assert(!models.member(disclose(modCommit)), "model already registered");
+
+  nextModelId.increment(1);
+
+  models.insert(disclose(modCommit), ModelEntry {
+    accuracyBps: disclose(accuracyBps),
+    providerCommitment: disclose(provCommit)
+  });
+}
+
+export circuit proveOwnership(targetModelCommitment: Bytes<32>): [] {
+  assert(models.member(disclose(targetModelCommitment)), "model not found");
+  const entry = models.lookup(disclose(targetModelCommitment));
+  const callerCommit = providerCommitment(providerSecret());
+  assert(callerCommit == entry.providerCommitment, "not the provider");
+}
+
+export circuit certifyModel(
+  targetModelCommitment: Bytes<32>,
+  minAccuracyBps: Uint<16>
+): [] {
+  assert(models.member(disclose(targetModelCommitment)), "model not found");
+  const entry = models.lookup(disclose(targetModelCommitment));
+  const callerCommit = providerCommitment(providerSecret());
+  assert(callerCommit == entry.providerCommitment, "not the provider");
+  assert(entry.accuracyBps >= minAccuracyBps, "below threshold");
+  certifications.insert(disclose(targetModelCommitment), disclose(minAccuracyBps));
+}
