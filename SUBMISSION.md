@@ -15,9 +15,13 @@ circuit "proveOwnership" (k=13, rows=4460)
 circuit "registerModel" (k=14, rows=8335)
 ```
 
+## Repository
+
+https://github.com/fahmmin/proof-of-mind
+
 ## You still need to do
 
-1. **Create public GitHub repo** and push (5+ commits — see git log after `git init`)
+1. ~~**Create public GitHub repo**~~ — https://github.com/fahmmin/proof-of-mind (7 commits)
 2. **Preprod deploy** — only step that needs your input:
    ```bash
    export WALLET_SEED="your-64-char-hex-seed"

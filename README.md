@@ -119,7 +119,7 @@ Capture after running locally:
 
 ## CI
 
-![CI](https://github.com/YOUR_ORG/proof-of-mind/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/fahmmin/proof-of-mind/actions/workflows/ci.yml/badge.svg)
 
 GitHub Actions runs `yarn compile` + `yarn test:local` on every push.
 
