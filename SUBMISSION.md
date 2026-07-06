@@ -39,10 +39,13 @@ circuit "proveOwnership" (k=13, rows=4460)
 circuit "registerModel" (k=14, rows=8335)
 ```
 
-## Screenshots to capture
+## Screenshots
 
-1. `yarn compile` — circuit list above
-2. `yarn verify:l1` — 4 passing tests
-3. `yarn deploy` or `deployment.json` — contract address on undeployed devnet
+Embedded in [README.md](README.md#screenshots-level-1-submission):
+
+- `docs/screenshots/compile-circuits.png` — `yarn compile`
+- `docs/screenshots/deploy-undeployed.png` — `yarn deploy`
+
+Still capture locally: `yarn verify:l1` — 4 passing tests.
 
 Do not paste inline `# comments` after shell commands in zsh.

@@ -8,11 +8,13 @@ When an AI company claims "94% accuracy on medical diagnosis," buyers must trust
 
 ## Hackathon level
 
-| Level | Status | Deliverable |
-|-------|--------|-------------|
-| L1 New Moon | Ready | Compact contract, vitest, local deploy, this README |
-| L2 Waxing Crescent | Scaffolded | `web/` — Lace wallet + register + indexer table |
-| L3 First Quarter | Scaffolded | `certifyModel` circuit, 4 tests, GitHub Actions CI |
+
+| Level              | Status     | Deliverable                                         |
+| ------------------ | ---------- | --------------------------------------------------- |
+| L1 New Moon        | Ready      | Compact contract, vitest, local deploy, this README |
+
+
+
 
 ## Prerequisites
 
@@ -20,6 +22,8 @@ When an AI company claims "94% accuracy on medical diagnosis," buyers must trust
 - **Docker** (local devnet + proof server)
 - **Compact compiler** 0.31.1 (`compact update 0.31.1`)
 - **Yarn 1.22**
+
+
 
 ### Install Compact
 
@@ -30,6 +34,8 @@ source $HOME/.local/bin/env
 compact update 0.31.1
 compact compile --version   # expect 0.31.1
 ```
+
+
 
 ## Setup (one command)
 
@@ -57,6 +63,8 @@ For the full stack including a new proof-server container:
 yarn env:up:all
 ```
 
+
+
 ## Deploy (local undeployed)
 
 With Docker running (`yarn env:up`):
@@ -67,7 +75,7 @@ yarn deploy
 
 Uses the pre-funded **genesis wallet** on local devnet by default. Custom seeds are ignored unless `USE_CUSTOM_WALLET=1`.
 
-Contract address is written to [`deployment.json`](deployment.json).
+Contract address is written to `[deployment.json](deployment.json)`.
 
 **Current deployment (undeployed):** see `deployment.json` after `yarn deploy`.
 
@@ -82,18 +90,20 @@ yarn sync:zk
 cd web && yarn install && yarn dev
 ```
 
-Open http://localhost:3000 with **Lace** (or 1AM) on **undeployed**. Connect → deploy or join contract → register model → view public registry.
+Open [http://localhost:3000](http://localhost:3000) with **Lace** (or 1AM) on **undeployed**. Connect → deploy or join contract → register model → view public registry.
 
 ## Public state vs private witness
 
-| Data | Visibility | Stored where |
-|------|------------|--------------|
-| Model fingerprint (weights hash) | **Private** | Browser localStorage + circuit witness |
-| Provider secret | **Private** | Witness only |
-| Model commitment `persistentHash(fingerprint)` | **Public** | On-chain `models` map key |
-| Provider commitment | **Public** | `ModelEntry.providerCommitment` |
-| Accuracy (basis points) | **Public** | `ModelEntry.accuracyBps` |
-| Certification threshold | **Public** | `certifications` map (after `certifyModel`) |
+
+| Data                                           | Visibility  | Stored where                                |
+| ---------------------------------------------- | ----------- | ------------------------------------------- |
+| Model fingerprint (weights hash)               | **Private** | Browser localStorage + circuit witness      |
+| Provider secret                                | **Private** | Witness only                                |
+| Model commitment `persistentHash(fingerprint)` | **Public**  | On-chain `models` map key                   |
+| Provider commitment                            | **Public**  | `ModelEntry.providerCommitment`             |
+| Accuracy (basis points)                        | **Public**  | `ModelEntry.accuracyBps`                    |
+| Certification threshold                        | **Public**  | `certifications` map (after `certifyModel`) |
+
 
 **What an observer learns:** a provider registered a commitment at a disclosed accuracy, and optionally certified a minimum threshold. They **cannot** recover model weights, raw fingerprints, or off-chain test prompts from chain data alone.
 
@@ -102,6 +112,8 @@ Open http://localhost:3000 with **Lace** (or 1AM) on **undeployed**. Connect →
 - `registerModel(accuracyBps)` — hash witnesses, disclose commitments + metric
 - `proveOwnership(modelCommitment)` — provider ZK auth
 - `certifyModel(modelCommitment, minAccuracyBps)` — Confidential Credentials: prove model meets threshold
+
+
 
 ## Project structure
 
@@ -114,13 +126,29 @@ src/                       # Headless wallet + vitest harness
 web/                       # React + Vite frontend (Lace / DApp Connector)
 ```
 
-## Screenshots (submission)
 
-Capture after running locally:
 
-1. **Compile** — `yarn compile` listing circuits (`registerModel`, `proveOwnership`, `certifyModel`)
-2. **Tests** — `yarn test:local` with 4 passing tests
-3. **Deploy** — contract address from test output or `deployment.json`
+## Screenshots (Level 1 submission)
+
+### Compact compile (`yarn compile`)
+
+Three ZK circuits compiled with Compact 0.31.1:
+
+![yarn compile — certifyModel, proveOwnership, registerModel](docs/screenshots/compile-circuits.png)
+
+### Deploy to undeployed (`yarn deploy`)
+
+Genesis wallet sync, DUST balance, and deployed contract address:
+
+![yarn deploy — undeployed devnet contract address](docs/screenshots/deploy-undeployed.png)
+
+Latest address is also recorded in [`deployment.json`](deployment.json).
+
+### Tests (capture locally)
+
+Run `yarn verify:l1` and screenshot 4 passing tests for the full L1 checklist (see [`SUBMISSION.md`](SUBMISSION.md)).
+
+
 
 ## CI
 
@@ -134,6 +162,8 @@ GitHub Actions runs `yarn compile` + `yarn test:local` on every push.
 - DUST-paid benchmark runs
 - Token staking for provider claims
 - Buyer UI that verifies credentials without displaying exact accuracy
+
+
 
 ## License
 
