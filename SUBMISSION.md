@@ -48,4 +48,6 @@ Embedded in [README.md](README.md#screenshots-level-1-submission):
 
 Still capture locally: `yarn verify:l1` — 4 passing tests.
 
+Level 2+ plans: [`ROADMAP.md`](ROADMAP.md).
+
 Do not paste inline `# comments` after shell commands in zsh.
