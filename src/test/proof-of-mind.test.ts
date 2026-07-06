@@ -9,7 +9,11 @@ import type { ContractAddress } from '@midnight-ntwrk/compact-runtime';
 import pino from 'pino';
 
 import { getConfig } from '../config.js';
-import { MidnightWalletProvider, syncWallet } from '../wallet.js';
+import {
+  MidnightWalletProvider,
+  GENESIS_WALLET_SEED,
+  syncWallet,
+} from '../wallet.js';
 import { buildProviders, type ProofOfMindProviders } from '../providers.js';
 import {
   CompiledProofOfMindContract,
@@ -23,8 +27,7 @@ import type { EnvironmentConfiguration } from '@midnight-ntwrk/testkit-js';
 // @ts-expect-error WebSocket global assignment for apollo
 globalThis.WebSocket = WebSocket;
 
-const ALICE_SEED =
-  '0000000000000000000000000000000000000000000000000000000000000001';
+const ALICE_SEED = GENESIS_WALLET_SEED;
 const ALICE_PRIVATE_STATE_ID = 'AliceProofOfMindState';
 
 const PROVIDER_SECRET = new Uint8Array(32).fill(0x01);

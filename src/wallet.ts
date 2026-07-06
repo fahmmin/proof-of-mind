@@ -13,6 +13,7 @@ import {
 } from '@midnight-ntwrk/midnight-js-types';
 import { ttlOneHour } from '@midnight-ntwrk/midnight-js-utils';
 import { type WalletFacade, type FacadeState } from '@midnight-ntwrk/wallet-sdk-facade';
+import type { createKeystore } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
 import {
   type DustWalletOptions,
   type EnvironmentConfiguration,
@@ -21,16 +22,24 @@ import {
 import * as Rx from 'rxjs';
 import type { Logger } from 'pino';
 
+export type UnshieldedKeystore = ReturnType<typeof createKeystore>;
+
+export const GENESIS_WALLET_SEED =
+  '0000000000000000000000000000000000000000000000000000000000000001';
+
 export class MidnightWalletProvider implements MidnightProvider, WalletProvider {
   readonly wallet: WalletFacade;
+  readonly unshieldedKeystore: UnshieldedKeystore;
 
   private constructor(
     private readonly logger: Logger,
     wallet: WalletFacade,
     private readonly zswapSecretKeys: ZswapSecretKeys,
     private readonly dustSecretKey: DustSecretKey,
+    unshieldedKeystore: UnshieldedKeystore,
   ) {
     this.wallet = wallet;
+    this.unshieldedKeystore = unshieldedKeystore;
   }
 
   getCoinPublicKey(): CoinPublicKey {
@@ -53,7 +62,10 @@ export class MidnightWalletProvider implements MidnightProvider, WalletProvider 
       },
       { ttl },
     );
-    return await this.wallet.finalizeRecipe(recipe);
+    const signed = await this.wallet.signRecipe(recipe, (payload) =>
+      this.unshieldedKeystore.signData(payload),
+    );
+    return await this.wallet.finalizeRecipe(signed);
   }
 
   submitTx(tx: FinalizedTransaction): Promise<string> {
@@ -84,14 +96,20 @@ export class MidnightWalletProvider implements MidnightProvider, WalletProvider 
       dustOptions,
     );
 
-    const buildResult = await builder.withSeed(seed).buildWithoutStarting();
-    const { wallet, seeds } = buildResult as {
+    const normalized = seed.trim();
+    const seededBuilder = normalized.includes(' ')
+      ? builder.withMnemonic(normalized)
+      : builder.withSeed(normalized);
+
+    const buildResult = await seededBuilder.buildWithoutStarting();
+    const { wallet, seeds, keystore } = buildResult as {
       wallet: WalletFacade;
       seeds: {
         masterSeed: string;
         shielded: Uint8Array;
         dust: Uint8Array;
       };
+      keystore: UnshieldedKeystore;
     };
 
     logger.info(`Wallet built from seed: ${seeds.masterSeed.slice(0, 8)}...`);
@@ -101,6 +119,7 @@ export class MidnightWalletProvider implements MidnightProvider, WalletProvider 
       wallet,
       ZswapSecretKeys.fromSeed(seeds.shielded),
       DustSecretKey.fromSeed(seeds.dust),
+      keystore,
     );
   }
 }
@@ -159,4 +178,18 @@ export async function syncWallet(
       }),
     ),
   );
+}
+
+export function resolveDeploySeed(networkId: string): string {
+  const isLocal = networkId === 'undeployed';
+  if (isLocal && process.env['USE_CUSTOM_WALLET'] !== '1') {
+    return GENESIS_WALLET_SEED;
+  }
+  const seed = process.env['WALLET_SEED']?.trim();
+  if (!seed) {
+    throw new Error(
+      'Set WALLET_SEED or use genesis on undeployed (default). For custom wallet on undeployed: USE_CUSTOM_WALLET=1 WALLET_SEED=...',
+    );
+  }
+  return seed;
 }
