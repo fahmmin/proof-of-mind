@@ -40,14 +40,32 @@ yarn test:local
 
 If port 6300 is in use, `yarn env:up` starts node + indexer only; keep a proof server on `http://127.0.0.1:6300`.
 
-## Deploy (undeployed)
+## Deploy by network
+
+### Preprod status
+
+Preprod status: currently unstable.
+
+### Undeployed (local devnet)
 
 ```bash
 yarn env:up
-yarn deploy
+yarn deploy:undeployed
 ```
 
 Uses the pre-funded genesis wallet on local devnet. Address is written to [`deployment.json`](deployment.json).
+
+Current undeployed address:
+
+`5442b4f253838b5c810d70d0a55f7985930a81e8ae6ec8a5c40644706a65f4e5`
+
+### Preprod
+
+```bash
+yarn deploy:preprod
+```
+
+Use a running proof server on `http://127.0.0.1:6300` and a funded preprod wallet seed (`DEPLOYER_SEED_PREPROD` or `DEPLOYER_SEED`).
 
 ## Public state vs private witness
 
