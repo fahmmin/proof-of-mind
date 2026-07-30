@@ -127,6 +127,20 @@ export async function certifyModel(
   });
 }
 
+export async function proveOwnership(
+  session: ConnectedSession,
+  contractAddress: string,
+  modelCommitmentHex: string,
+) {
+  await (submitCallTxAsync as any)(session.providers, {
+    compiledContract: makeCompiledContract(),
+    contractAddress,
+    circuitId: 'proveOwnership',
+    args: [fromHex(modelCommitmentHex)],
+    privateStateId: PRIVATE_STATE_ID,
+  });
+}
+
 export function decodeRegistryState(stateHex: string): RegistryState {
   const contractState = ContractState.deserialize(fromHex(stateHex));
   const l = ledger(contractState.data);

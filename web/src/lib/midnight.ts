@@ -194,10 +194,49 @@ export async function pollForState(
   throw new Error(`Contract state not indexed after ${(maxAttempts * intervalMs) / 1000}s`);
 }
 
-export async function detectWallet(): Promise<any> {
-  const midnight = (window as any).midnight;
-  if (!midnight) throw new Error('No Midnight wallet extension found (install Lace or 1AM)');
-  const wallets = Object.values(midnight);
-  if (wallets.length === 0) throw new Error('No Midnight wallets detected');
-  return wallets[0];
+/**
+ * Midnight dApp connector v4: wallets live on `window.midnight`
+ * (e.g. mnLace, 1am, or UUID keys). Prefer Lace, then 1AM, then any connectable injector.
+ * Never hardcode a wallet UUID.
+ */
+export function listMidnightWalletApis(): any[] {
+  const midnight = (window as unknown as { midnight?: Record<string, unknown> }).midnight;
+  if (!midnight) return [];
+  const seen = new Set<unknown>();
+  const ordered: any[] = [];
+  const add = (w: unknown): void => {
+    if (w == null || seen.has(w)) return;
+    if (typeof (w as { connect?: unknown }).connect !== 'function') return;
+    seen.add(w);
+    ordered.push(w);
+  };
+  add(midnight.mnLace);
+  add(midnight['1am']);
+  for (const v of Object.values(midnight)) add(v);
+  return ordered;
+}
+
+export function detectWalletName(api: unknown): string {
+  const midnight = (window as unknown as { midnight?: Record<string, unknown> }).midnight;
+  if (!midnight || api == null) return 'Midnight wallet';
+  for (const [key, value] of Object.entries(midnight)) {
+    if (value === api) {
+      if (key === 'mnLace') return 'Lace';
+      if (key === '1am') return '1AM';
+      return key;
+    }
+  }
+  return 'Midnight wallet';
+}
+
+export async function detectWallet(timeoutMs = 5_000): Promise<any> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const apis = listMidnightWalletApis();
+    if (apis.length > 0) return apis[0];
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error(
+    'No Midnight wallet found. Install Lace or 1AM, switch to undeployed, then refresh.',
+  );
 }
