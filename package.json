@@ -16,6 +16,7 @@
     "deploy:preprod": "MIDNIGHT_NETWORK=preprod NODE_OPTIONS='--experimental-vm-modules' tsx src/deploy.ts",
     "sync:zk": "node scripts/sync-zk-assets.mjs",
     "web:install": "cd web && yarn install",
+    "web:dev": "yarn sync:zk && cd web && yarn dev",
     "web:build": "yarn sync:zk && cd web && yarn build",
     "env:up": "docker compose up -d --wait node indexer",
     "env:up:all": "docker compose up -d --wait",

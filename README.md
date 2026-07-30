@@ -1,6 +1,6 @@
 # Proof of Mind
 
-ZK-verified AI benchmarking on [Midnight Network](https://midnight.network). Model providers register benchmark claims using private witnesses — model fingerprints and provider secrets never touch the ledger. Only cryptographic commitments and disclosed metrics appear on-chain.
+ZK-verified AI benchmarking on [Midnight Network](https://midnight.network). Model providers register benchmark claims using private witnesses. Model fingerprints and provider secrets never touch the ledger. Only cryptographic commitments and disclosed metrics appear on-chain.
 
 ## Product idea
 
@@ -8,10 +8,11 @@ When an AI company claims "94% accuracy on medical diagnosis," buyers must trust
 
 ## Prerequisites
 
-- **Node.js 22+**
+- **Node.js 22+** (`nvm use 22`)
 - **Docker** (local devnet + proof server)
 - **Compact compiler** 0.31.1 (`compact update 0.31.1`)
 - **Yarn 1.22**
+- **Lace** or **1AM** wallet extension (for the web UI, network set to undeployed)
 
 ### Install Compact
 
@@ -29,7 +30,7 @@ compact compile --version
 yarn setup:l1
 ```
 
-Or manually (one command per line, no trailing comments):
+Or manually:
 
 ```bash
 yarn install
@@ -40,13 +41,7 @@ yarn test:local
 
 If port 6300 is in use, `yarn env:up` starts node + indexer only; keep a proof server on `http://127.0.0.1:6300`.
 
-## Deploy by network
-
-### Preprod status
-
-Preprod status: currently unstable.
-
-### Undeployed (local devnet)
+## Deploy (undeployed / local only)
 
 ```bash
 yarn env:up
@@ -57,15 +52,33 @@ Uses the pre-funded genesis wallet on local devnet. Address is written to [`depl
 
 Current undeployed address:
 
-`5442b4f253838b5c810d70d0a55f7985930a81e8ae6ec8a5c40644706a65f4e5`
+`47d43e9968561ec970c53aa1063cf65a68bad2be995369e4a5969aee06644dc3`
 
-### Preprod
+## Frontend (Level 2)
+
+Multi-page React app under `web/`:
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Storyline landing (fingerprint registry narrative) |
+| `/app` | Wallet connect/disconnect, deploy/join, `registerModel` / `proveOwnership` |
+| `/registry` | Public indexer registry + privacy split demo + `certifyModel` |
 
 ```bash
-yarn deploy:preprod
+nvm use 22
+yarn sync:zk
+yarn web:dev
 ```
 
-Use a running proof server on `http://127.0.0.1:6300` and a funded preprod wallet seed (`DEPLOYER_SEED_PREPROD` or `DEPLOYER_SEED`).
+Open http://localhost:3000. Connect **Lace** or **1AM** on **undeployed**, then deploy or paste the address from `deployment.json`.
+
+Wallet detection uses `window.midnight` (prefers `mnLace`, then `1AM`, then any connectable injector). No wallet UUID is hardcoded.
+
+### Circuits wired in the UI
+
+- `registerModel(accuracyBps)`
+- `proveOwnership(modelCommitment)`
+- `certifyModel(modelCommitment, minAccuracyBps)`
 
 ## Public state vs private witness
 
@@ -79,22 +92,14 @@ Use a running proof server on `http://127.0.0.1:6300` and a funded preprod walle
 
 **What an observer learns:** a provider registered a commitment at a disclosed accuracy. They **cannot** recover model weights, raw fingerprints, or test prompts from chain data alone.
 
-## Circuits
-
-- `registerModel(accuracyBps)` — hash witnesses, disclose commitments + metric
-- `proveOwnership(modelCommitment)` — provider ZK auth
-- `certifyModel(modelCommitment, minAccuracyBps)` — threshold credential
-
 ## Project structure
 
 ```
-contracts/
-  proof-of-mind.compact
-  witnesses.ts
-  managed/proof-of-mind/
-src/
-  test/proof-of-mind.test.ts
-  deploy.ts
+contracts/          # Compact + managed ZK artifacts
+src/                # Headless wallet, deploy, vitest
+web/                # React 19 + Vite multi-page UI
+scripts/sync-zk-assets.mjs
+deployment.json
 ```
 
 ## Screenshots
@@ -107,12 +112,7 @@ src/
 
 ![yarn deploy](docs/screenshots/deploy-undeployed.png)
 
-See [`SUBMISSION.md`](SUBMISSION.md) for the full Level 1 checklist.
-
-## Further reading
-
-- [`ROADMAP.md`](ROADMAP.md) — Level 2+ frontend, preprod, CI, post-hackathon plans
-- [`hackathon-stages.md`](hackathon-stages.md) — official hackathon stage requirements
+See [`SUBMISSION.md`](SUBMISSION.md) for the Level 1 checklist and [`ROADMAP.md`](ROADMAP.md) for later stages.
 
 ## License
 

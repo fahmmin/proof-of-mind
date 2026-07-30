@@ -7,24 +7,24 @@ Level 1 submission details: [`SUBMISSION.md`](SUBMISSION.md). Official stage req
 | Level | Status | Deliverable |
 |-------|--------|-------------|
 | L1 New Moon | Done | Compact contract, vitest, undeployed deploy, README |
-| L2 Waxing Crescent | Scaffolded | `web/` — Lace wallet + register + indexer registry |
+| L2 Waxing Crescent | Done | Multi-page `web/` - landing, app, registry, Lace/1AM, circuits |
 | L3 First Quarter | Scaffolded | `certifyModel`, 4+ tests, GitHub Actions CI |
 
 ## Level 2 — frontend (Waxing Crescent)
 
 ```bash
-yarn sync:zk
-cd web && yarn install && yarn dev
+yarn web:dev
 ```
 
-Open http://localhost:3000 with **Lace** (or 1AM) on **undeployed** (or **preprod** when ready). Connect → deploy or join contract → register model → view public registry.
+Open http://localhost:3000 with **Lace** or **1AM** on **undeployed**. Connect → deploy or join → register / prove / certify.
 
 Key paths:
 
-- `web/src/App.tsx` — wallet connect, register form, indexer table
-- `web/src/lib/midnight.ts` — DApp connector session (from leaderboard-dapp pattern)
-- `web/src/lib/proof-of-mind.ts` — deploy, registerModel, fetch registry
-- `web/public/zk/proof-of-mind/` — synced ZK assets (`yarn sync:zk`)
+- `web/src/pages/LandingPage.tsx` - storyline landing + Motion
+- `web/src/pages/AppPage.tsx` - wallet, deploy/join, registerModel, proveOwnership
+- `web/src/pages/RegistryPage.tsx` - indexer registry + privacy panel + certifyModel
+- `web/src/lib/midnight.ts` - Lace/1AM detect via `window.midnight`
+- `web/public/zk/proof-of-mind/` - synced ZK assets (`yarn sync:zk`)
 
 ## Preprod deploy (after L1)
 
