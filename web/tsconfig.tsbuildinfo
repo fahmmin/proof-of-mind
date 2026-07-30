@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/lib/contract.ts","./src/lib/midnight.ts","./src/lib/proof-of-mind.ts"],"version":"5.9.3"}
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/MarketingNav.tsx","./src/components/PrivacyPanel.tsx","./src/components/WalletBar.tsx","./src/context/ProofOfMindContext.tsx","./src/lib/contract.ts","./src/lib/midnight.ts","./src/lib/network.ts","./src/lib/proof-of-mind.ts","./src/pages/AppPage.tsx","./src/pages/LandingPage.tsx","./src/pages/RegistryPage.tsx"],"version":"5.9.3"}
