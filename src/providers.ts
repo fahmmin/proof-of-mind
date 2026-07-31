@@ -1,10 +1,11 @@
-import { type MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import { type MidnightWalletProvider } from './wallet.js';
+import type { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+
 import { type NetworkConfig } from './config.js';
+import { type WalletContext } from './wallet.js';
 
 export type ProofOfMindCircuits =
   | 'registerModel'
@@ -13,33 +14,45 @@ export type ProofOfMindCircuits =
 
 export type ProofOfMindProviders = MidnightProviders<ProofOfMindCircuits>;
 
-export function buildProviders(
-  wallet: MidnightWalletProvider,
+export function createProviders(
+  walletCtx: WalletContext,
   zkConfigPath: string,
-  config: NetworkConfig,
+  networkConfig: NetworkConfig,
   storeSuffix = `${Date.now()}`,
 ): ProofOfMindProviders {
-  const zkConfigProvider = new NodeZkConfigProvider<ProofOfMindCircuits>(
-    zkConfigPath,
-  );
+  const zkConfigProvider = new NodeZkConfigProvider<ProofOfMindCircuits>(zkConfigPath);
+  const accountId = walletCtx.unshieldedKeystore.getBech32Address().toString();
+
+  const walletProvider = {
+    getCoinPublicKey: () => walletCtx.shieldedSecretKeys.coinPublicKey,
+    getEncryptionPublicKey: () => walletCtx.shieldedSecretKeys.encryptionPublicKey,
+    async balanceTx(tx: any, ttl?: Date) {
+      const recipe = await walletCtx.wallet.balanceUnboundTransaction(
+        tx,
+        {
+          shieldedSecretKeys: walletCtx.shieldedSecretKeys,
+          dustSecretKey: walletCtx.dustSecretKey,
+        },
+        { ttl: ttl ?? new Date(Date.now() + 30 * 60 * 1000) },
+      );
+      return walletCtx.wallet.finalizeRecipe(recipe);
+    },
+    submitTx: (tx: any) => walletCtx.wallet.submitTransaction(tx) as any,
+  };
 
   return {
     privateStateProvider: levelPrivateStateProvider({
       privateStateStoreName: `proof-of-mind-${storeSuffix}`,
-      walletProvider: wallet,
       privateStoragePasswordProvider: () => 'xK9#mQ2$pL8@nR5!vW3*',
-      accountId: `pom-account-${storeSuffix}`,
+      accountId,
     }),
     publicDataProvider: indexerPublicDataProvider(
-      config.indexer,
-      config.indexerWS,
+      networkConfig.indexer,
+      networkConfig.indexerWS,
     ),
     zkConfigProvider,
-    proofProvider: httpClientProofProvider(
-      config.proofServer,
-      zkConfigProvider,
-    ),
-    walletProvider: wallet,
-    midnightProvider: wallet,
+    proofProvider: httpClientProofProvider(networkConfig.proofServer, zkConfigProvider),
+    walletProvider,
+    midnightProvider: walletProvider,
   };
 }
