@@ -2,7 +2,8 @@
 
 ZK-verified AI benchmarking on [Midnight Network](https://midnight.network). Model providers register benchmark claims with private witnesses — fingerprints and secrets never touch the ledger. Only commitments and disclosed metrics appear on-chain.
 
-**Live dApp (Preview):** [https://proof-of-mind.vercel.app](https://proof-of-mind.vercel.app)
+**Live dApp (Preview):** [https://proof-of-mind.vercel.app](https://proof-of-mind.vercel.app)  
+**Live demo video:** [Watch on YouTube](https://youtu.be/jwOxn-CEkBo)
 
 | Level | Codename | Status |
 |-------|----------|--------|
@@ -30,6 +31,7 @@ ZK-verified AI benchmarking on [Midnight Network](https://midnight.network). Mod
 |-------|--------|
 | Network | `preview` |
 | Frontend | [proof-of-mind.vercel.app](https://proof-of-mind.vercel.app) |
+| Demo video | [YouTube](https://youtu.be/jwOxn-CEkBo) |
 | Contract address | `c27a3d1428ea26c5c1014bc05d19c9e5764fd9467f0157f5aedafef76d699bd1` |
 | Indexer | `https://indexer.preview.midnight.network/api/v4/graphql` |
 | ZK assets | `/zk/proof-of-mind` |
