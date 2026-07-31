@@ -9,26 +9,24 @@ import type { ContractAddress } from '@midnight-ntwrk/compact-runtime';
 import pino from 'pino';
 
 import { getConfig } from '../config.js';
+import { ensureDust } from '../dust.js';
+import { createProviders, type ProofOfMindProviders } from '../providers.js';
 import {
-  MidnightWalletProvider,
   GENESIS_WALLET_SEED,
-  syncWallet,
+  createWallet,
+  waitForSyncedWallet,
 } from '../wallet.js';
-import { buildProviders, type ProofOfMindProviders } from '../providers.js';
 import {
   CompiledProofOfMindContract,
   ledger,
   pureCircuits,
   zkConfigPath,
 } from '../../contracts/index.js';
+import { proofOfMindPrivateStateKey } from '../../contracts/constants.js';
 import { createInitialPrivateState } from '../../contracts/witnesses.js';
-import type { EnvironmentConfiguration } from '@midnight-ntwrk/testkit-js';
 
 // @ts-expect-error WebSocket global assignment for apollo
 globalThis.WebSocket = WebSocket;
-
-const ALICE_SEED = GENESIS_WALLET_SEED;
-const ALICE_PRIVATE_STATE_ID = 'AliceProofOfMindState';
 
 const PROVIDER_SECRET = new Uint8Array(32).fill(0x01);
 const MODEL_FINGERPRINT = new Uint8Array(32).fill(0x02);
@@ -40,7 +38,7 @@ const logger = pino({
 });
 
 describe('Proof of Mind Contract', () => {
-  let aliceWallet: MidnightWalletProvider;
+  let walletCtx: Awaited<ReturnType<typeof createWallet>>;
   let aliceProviders: ProofOfMindProviders;
   let contractAddress: ContractAddress;
   let expectedModelCommitment: Uint8Array;
@@ -59,40 +57,25 @@ describe('Proof of Mind Contract', () => {
 
     expectedModelCommitment = pureCircuits.modelCommitment(MODEL_FINGERPRINT);
 
-    const envConfig: EnvironmentConfiguration = {
-      walletNetworkId: config.networkId,
-      networkId: config.networkId,
-      indexer: config.indexer,
-      indexerWS: config.indexerWS,
-      node: config.node,
-      nodeWS: config.nodeWS,
-      faucet: config.faucet,
-      proofServer: config.proofServer,
-    };
+    walletCtx = await createWallet(config, GENESIS_WALLET_SEED);
+    await waitForSyncedWallet(walletCtx.wallet, 600_000);
+    await ensureDust(walletCtx);
 
-    aliceWallet = await MidnightWalletProvider.build(
-      logger,
-      envConfig,
-      ALICE_SEED,
-    );
-    await aliceWallet.start();
-    await syncWallet(logger, aliceWallet.wallet, 600_000);
-
-    aliceProviders = buildProviders(aliceWallet, zkConfigPath, config);
+    aliceProviders = createProviders(walletCtx, zkConfigPath, config, 'test');
     logger.info('Providers initialized. Ready to test!');
   });
 
   afterAll(async () => {
-    if (aliceWallet) {
-      logger.info('Stopping Alice wallet...');
-      await aliceWallet.stop();
+    if (walletCtx) {
+      logger.info('Stopping wallet...');
+      await walletCtx.wallet.stop();
     }
   });
 
   it('deploys the contract', async () => {
     const deployed: any = await (deployContract as any)(aliceProviders, {
       compiledContract: CompiledProofOfMindContract,
-      privateStateId: ALICE_PRIVATE_STATE_ID,
+      privateStateId: proofOfMindPrivateStateKey,
       initialPrivateState: createInitialPrivateState(
         PROVIDER_SECRET,
         MODEL_FINGERPRINT,
@@ -113,7 +96,7 @@ describe('Proof of Mind Contract', () => {
     await (submitCallTx as any)(aliceProviders, {
       compiledContract: CompiledProofOfMindContract,
       contractAddress,
-      privateStateId: ALICE_PRIVATE_STATE_ID,
+      privateStateId: proofOfMindPrivateStateKey,
       circuitId: 'registerModel',
       args: [BigInt(ACCURACY_BPS)],
     });
@@ -133,7 +116,7 @@ describe('Proof of Mind Contract', () => {
     await (submitCallTx as any)(aliceProviders, {
       compiledContract: CompiledProofOfMindContract,
       contractAddress,
-      privateStateId: ALICE_PRIVATE_STATE_ID,
+      privateStateId: proofOfMindPrivateStateKey,
       circuitId: 'proveOwnership',
       args: [expectedModelCommitment],
     });
@@ -148,7 +131,7 @@ describe('Proof of Mind Contract', () => {
     await (submitCallTx as any)(aliceProviders, {
       compiledContract: CompiledProofOfMindContract,
       contractAddress,
-      privateStateId: ALICE_PRIVATE_STATE_ID,
+      privateStateId: proofOfMindPrivateStateKey,
       circuitId: 'certifyModel',
       args: [expectedModelCommitment, minThreshold],
     });
