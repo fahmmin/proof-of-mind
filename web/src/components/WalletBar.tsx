@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useProofOfMind, truncHex } from '../context/ProofOfMindContext';
-import { NETWORK_ID } from '../lib/network';
+import { NETWORK_ID } from '../config';
 
 export function WalletBar() {
   const {
-    session,
-    walletLabel,
+    connected,
+    unshieldedAddress,
     busy,
     onConnect,
     onDisconnect,
@@ -16,7 +16,7 @@ export function WalletBar() {
       <span className="mono text-xs uppercase tracking-wide text-[var(--pom-muted)]">
         network {NETWORK_ID}
       </span>
-      {!session ? (
+      {!connected ? (
         <button
           type="button"
           onClick={() => void onConnect()}
@@ -28,7 +28,7 @@ export function WalletBar() {
       ) : (
         <>
           <span className="mono text-sm text-[var(--pom-ink)]">
-            {walletLabel ?? 'Wallet'} {truncHex(session.unshieldedAddress, 12, 8)}
+            {unshieldedAddress ? truncHex(unshieldedAddress, 12, 8) : 'Connected'}
           </span>
           <button
             type="button"

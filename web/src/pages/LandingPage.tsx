@@ -151,10 +151,10 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-[1400px] flex-col gap-6 px-4 py-20 md:flex-row md:items-end md:justify-between md:px-8 md:py-28">
           <div>
             <h2 className="m-0 max-w-[16ch] text-3xl font-medium tracking-tight md:text-4xl">
-              Run it on undeployed
+              Run it on preview
             </h2>
             <p className="mt-3 max-w-[48ch] text-base text-[var(--pom-muted)]">
-              Connect Lace or 1AM on the local network, deploy or join the contract, then exercise the circuits.
+              Connect Lace or 1AM on preview, join the pinned contract, then exercise the circuits.
             </p>
           </div>
           <Link
@@ -169,7 +169,7 @@ export function LandingPage() {
       <footer className="border-t border-[var(--pom-line)]">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-8 text-sm text-[var(--pom-muted)] md:px-8">
           <span>Proof of Mind on Midnight</span>
-          <span className="mono text-xs">undeployed local network</span>
+          <span className="mono text-xs">preview network</span>
         </div>
       </footer>
     </div>

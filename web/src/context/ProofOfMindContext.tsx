@@ -4,37 +4,30 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
+import pino from 'pino';
 import {
-  createConnectedSession,
-  detectWallet,
-  detectWalletName,
-  type ConnectedSession,
-} from '../lib/midnight';
-import {
-  certifyModel,
-  deployContract,
-  fetchRegistryState,
-  getModelCommitmentPreview,
-  getOrCreateSecrets,
-  proveOwnership,
-  registerModel,
-  ZK_PATH,
+  ProofOfMindAPI,
   type ModelRegistryEntry,
-} from '../lib/proof-of-mind';
-import { LOCAL_INDEXER, NETWORK_ID } from '../lib/network';
-import type { ProofOfMindPrivateState } from '@contracts/witnesses.js';
-
-const CONTRACT_STORAGE_KEY = 'proof-of-mind-contract';
+} from '../../../api/src/index.js';
+import {
+  BrowserProofOfMindManager,
+  friendlyError,
+  getOrCreateSecrets,
+} from '../lib/BrowserProofOfMindManager';
+import {
+  CONTRACT_ADDRESS,
+  INDEXER_URL,
+  NETWORK_ID,
+} from '../config';
 
 type ProofOfMindContextValue = {
-  session: ConnectedSession | null;
-  walletLabel: string | null;
-  contractAddress: string | null;
-  joinInput: string;
-  setJoinInput: (v: string) => void;
+  connected: boolean;
+  unshieldedAddress: string | null;
+  contractAddress: string;
   entries: ModelRegistryEntry[];
   accuracyInput: string;
   setAccuracyInput: (v: string) => void;
@@ -42,14 +35,13 @@ type ProofOfMindContextValue = {
   setCertThreshold: (v: string) => void;
   busy: boolean;
   error: string | null;
-  setError: (v: string | null) => void;
-  secrets: ProofOfMindPrivateState;
+  status: string | null;
+  secrets: ReturnType<typeof getOrCreateSecrets>;
   modelPreview: string;
+  providerPreview: string;
   refresh: () => Promise<void>;
   onConnect: () => Promise<void>;
   onDisconnect: () => Promise<void>;
-  onDeploy: () => Promise<void>;
-  onJoin: () => void;
   onRegister: () => Promise<void>;
   onCertify: (modelCommitment: string) => Promise<void>;
   onProveOwnership: (modelCommitment: string) => Promise<void>;
@@ -58,155 +50,139 @@ type ProofOfMindContextValue = {
 const ProofOfMindContext = createContext<ProofOfMindContextValue | null>(null);
 
 export function ProofOfMindProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<ConnectedSession | null>(null);
-  const [walletLabel, setWalletLabel] = useState<string | null>(null);
-  const [contractAddress, setContractAddress] = useState<string | null>(null);
-  const [joinInput, setJoinInput] = useState('');
+  const managerRef = useRef<BrowserProofOfMindManager | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [unshieldedAddress, setUnshieldedAddress] = useState<string | null>(null);
   const [entries, setEntries] = useState<ModelRegistryEntry[]>([]);
   const [accuracyInput, setAccuracyInput] = useState('9400');
   const [certThreshold, setCertThreshold] = useState('9000');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [secrets] = useState(() => getOrCreateSecrets());
-  const modelPreview = useMemo(() => getModelCommitmentPreview(secrets), [secrets]);
+  const [status, setStatus] = useState<string | null>(null);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(CONTRACT_STORAGE_KEY);
-    if (stored) setContractAddress(stored);
+  const secrets = useMemo(() => getOrCreateSecrets(), []);
+  const previews = useMemo(() => ProofOfMindAPI.commitmentPreviews(secrets), [secrets]);
+
+  const getManager = useCallback(() => {
+    if (!managerRef.current) {
+      const logger = pino({ level: 'warn', browser: { asObject: true } });
+      managerRef.current = new BrowserProofOfMindManager(logger);
+    }
+    return managerRef.current;
   }, []);
 
   const refresh = useCallback(async () => {
-    if (!contractAddress) return;
-    const indexerUrl = session?.config.indexerUri ?? LOCAL_INDEXER;
     try {
-      const state = await fetchRegistryState(indexerUrl, contractAddress);
+      const state = await ProofOfMindAPI.fetchRegistryState(
+        INDEXER_URL,
+        CONTRACT_ADDRESS,
+        NETWORK_ID,
+      );
       setEntries(state.entries);
       setError(null);
     } catch (e) {
-      setError(String(e));
+      setError(friendlyError(e));
     }
-  }, [contractAddress, session]);
+  }, []);
 
   useEffect(() => {
     void refresh();
-    if (!contractAddress) return;
     const interval = setInterval(() => void refresh(), 15_000);
     return () => clearInterval(interval);
-  }, [refresh, contractAddress]);
+  }, [refresh]);
 
   const onConnect = useCallback(async () => {
     setBusy(true);
     setError(null);
+    setStatus(null);
     try {
-      const wallet = await detectWallet();
-      const api = await wallet.connect(NETWORK_ID);
-      setWalletLabel(detectWalletName(wallet));
-      setSession(await createConnectedSession(api, ZK_PATH));
+      const manager = getManager();
+      const session = await manager.getSession();
+      await manager.join(CONTRACT_ADDRESS);
+      setUnshieldedAddress(session.unshieldedAddress);
+      setConnected(true);
+      setStatus(`Connected on ${NETWORK_ID} — joined contract via findDeployedContract`);
     } catch (e) {
-      setError(String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [getManager]);
 
   const onDisconnect = useCallback(async () => {
+    setBusy(true);
     try {
-      if (session?.api?.disconnect) await session.api.disconnect();
+      await getManager().disconnect();
     } catch {
       // Wallet may already be disconnected.
     }
-    setSession(null);
-    setWalletLabel(null);
-  }, [session]);
-
-  const onDeploy = useCallback(async () => {
-    if (!session) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const addr = await deployContract(session);
-      setContractAddress(addr);
-      localStorage.setItem(CONTRACT_STORAGE_KEY, addr);
-      await refresh();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }, [session, refresh]);
-
-  const onJoin = useCallback(() => {
-    const addr = joinInput.trim();
-    if (!/^[0-9a-fA-F]{64}$/.test(addr)) {
-      setError('Contract address must be 64 hex characters.');
-      return;
-    }
-    setContractAddress(addr);
-    localStorage.setItem(CONTRACT_STORAGE_KEY, addr);
-    setJoinInput('');
-    setError(null);
-  }, [joinInput]);
+    setConnected(false);
+    setUnshieldedAddress(null);
+    setStatus('Disconnected');
+    setBusy(false);
+  }, [getManager]);
 
   const onRegister = useCallback(async () => {
-    if (!session || !contractAddress) return;
     setBusy(true);
     setError(null);
+    setStatus('Proving registerModel…');
     try {
-      await registerModel(session, contractAddress, Number(accuracyInput));
+      const api = await getManager().join(CONTRACT_ADDRESS);
+      await api.registerModel(Number(accuracyInput));
+      setStatus('registerModel submitted. Fingerprint stayed local; accuracy disclosed.');
       await refresh();
     } catch (e) {
-      setError(String(e));
+      setError(friendlyError(e));
+      setStatus(null);
     } finally {
       setBusy(false);
     }
-  }, [session, contractAddress, accuracyInput, refresh]);
+  }, [getManager, accuracyInput, refresh]);
 
   const onCertify = useCallback(
     async (modelCommitment: string) => {
-      if (!session || !contractAddress) return;
       setBusy(true);
       setError(null);
+      setStatus('Proving certifyModel…');
       try {
-        await certifyModel(
-          session,
-          contractAddress,
-          modelCommitment,
-          Number(certThreshold),
-        );
+        const api = await getManager().join(CONTRACT_ADDRESS);
+        await api.certifyModel(modelCommitment, Number(certThreshold));
+        setStatus('Model certified on-chain.');
         await refresh();
       } catch (e) {
-        setError(String(e));
+        setError(friendlyError(e));
+        setStatus(null);
       } finally {
         setBusy(false);
       }
     },
-    [session, contractAddress, certThreshold, refresh],
+    [getManager, certThreshold, refresh],
   );
 
   const onProveOwnership = useCallback(
     async (modelCommitment: string) => {
-      if (!session || !contractAddress) return;
       setBusy(true);
       setError(null);
+      setStatus('Proving proveOwnership…');
       try {
-        await proveOwnership(session, contractAddress, modelCommitment);
-        await refresh();
+        const api = await getManager().join(CONTRACT_ADDRESS);
+        await api.proveOwnership(modelCommitment);
+        setStatus('Ownership proven without revealing provider secret.');
       } catch (e) {
-        setError(String(e));
+        setError(friendlyError(e));
+        setStatus(null);
       } finally {
         setBusy(false);
       }
     },
-    [session, contractAddress, refresh],
+    [getManager],
   );
 
   const value = useMemo(
     () => ({
-      session,
-      walletLabel,
-      contractAddress,
-      joinInput,
-      setJoinInput,
+      connected,
+      unshieldedAddress,
+      contractAddress: CONTRACT_ADDRESS,
       entries,
       accuracyInput,
       setAccuracyInput,
@@ -214,35 +190,31 @@ export function ProofOfMindProvider({ children }: { children: ReactNode }) {
       setCertThreshold,
       busy,
       error,
-      setError,
+      status,
       secrets,
-      modelPreview,
+      modelPreview: previews.model,
+      providerPreview: previews.provider,
       refresh,
       onConnect,
       onDisconnect,
-      onDeploy,
-      onJoin,
       onRegister,
       onCertify,
       onProveOwnership,
     }),
     [
-      session,
-      walletLabel,
-      contractAddress,
-      joinInput,
+      connected,
+      unshieldedAddress,
       entries,
       accuracyInput,
       certThreshold,
       busy,
       error,
+      status,
       secrets,
-      modelPreview,
+      previews,
       refresh,
       onConnect,
       onDisconnect,
-      onDeploy,
-      onJoin,
       onRegister,
       onCertify,
       onProveOwnership,
