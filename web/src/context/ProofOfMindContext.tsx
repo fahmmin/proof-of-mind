@@ -18,6 +18,7 @@ import {
   friendlyError,
   getOrCreateSecrets,
 } from '../lib/BrowserProofOfMindManager';
+import { percentToBps } from '../lib/progress';
 import {
   CONTRACT_ADDRESS,
   INDEXER_URL,
@@ -29,21 +30,22 @@ type ProofOfMindContextValue = {
   unshieldedAddress: string | null;
   contractAddress: string;
   entries: ModelRegistryEntry[];
-  accuracyInput: string;
-  setAccuracyInput: (v: string) => void;
-  certThreshold: string;
-  setCertThreshold: (v: string) => void;
+  /** Accuracy as percentage string for UI (e.g. "94") */
+  accuracyPercent: string;
+  setAccuracyPercent: (v: string) => void;
+  /** Certify threshold as percentage string for UI (e.g. "90") */
+  certThresholdPercent: string;
+  setCertThresholdPercent: (v: string) => void;
   busy: boolean;
-  error: string | null;
-  status: string | null;
   secrets: ReturnType<typeof getOrCreateSecrets>;
   modelPreview: string;
   providerPreview: string;
   refresh: () => Promise<void>;
   onConnect: () => Promise<void>;
   onDisconnect: () => Promise<void>;
-  onRegister: () => Promise<void>;
-  onCertify: (modelCommitment: string) => Promise<void>;
+  /** Throws friendly errors; caller drives TxFlow / toasts */
+  onRegister: (accuracyOverride?: number) => Promise<void>;
+  onCertify: (modelCommitment: string, thresholdOverride?: number) => Promise<void>;
   onProveOwnership: (modelCommitment: string) => Promise<void>;
 };
 
@@ -54,11 +56,9 @@ export function ProofOfMindProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
   const [unshieldedAddress, setUnshieldedAddress] = useState<string | null>(null);
   const [entries, setEntries] = useState<ModelRegistryEntry[]>([]);
-  const [accuracyInput, setAccuracyInput] = useState('9400');
-  const [certThreshold, setCertThreshold] = useState('9000');
+  const [accuracyPercent, setAccuracyPercent] = useState('94');
+  const [certThresholdPercent, setCertThresholdPercent] = useState('90');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
 
   const secrets = useMemo(() => getOrCreateSecrets(), []);
   const previews = useMemo(() => ProofOfMindAPI.commitmentPreviews(secrets), [secrets]);
@@ -79,9 +79,8 @@ export function ProofOfMindProvider({ children }: { children: ReactNode }) {
         NETWORK_ID,
       );
       setEntries(state.entries);
-      setError(null);
-    } catch (e) {
-      setError(friendlyError(e));
+    } catch {
+      // Quiet refresh failures — avoid jargon banners on every poll miss
     }
   }, []);
 
@@ -93,17 +92,14 @@ export function ProofOfMindProvider({ children }: { children: ReactNode }) {
 
   const onConnect = useCallback(async () => {
     setBusy(true);
-    setError(null);
-    setStatus(null);
     try {
       const manager = getManager();
       const session = await manager.getSession();
       await manager.join(CONTRACT_ADDRESS);
       setUnshieldedAddress(session.unshieldedAddress);
       setConnected(true);
-      setStatus(`Connected on ${NETWORK_ID} — joined contract via findDeployedContract`);
     } catch (e) {
-      setError(friendlyError(e));
+      throw new Error(friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -118,59 +114,59 @@ export function ProofOfMindProvider({ children }: { children: ReactNode }) {
     }
     setConnected(false);
     setUnshieldedAddress(null);
-    setStatus('Disconnected');
     setBusy(false);
   }, [getManager]);
 
-  const onRegister = useCallback(async () => {
-    setBusy(true);
-    setError(null);
-    setStatus('Proving registerModel…');
-    try {
-      const api = await getManager().join(CONTRACT_ADDRESS);
-      await api.registerModel(Number(accuracyInput));
-      setStatus('registerModel submitted. Fingerprint stayed local; accuracy disclosed.');
-      await refresh();
-    } catch (e) {
-      setError(friendlyError(e));
-      setStatus(null);
-    } finally {
-      setBusy(false);
-    }
-  }, [getManager, accuracyInput, refresh]);
-
-  const onCertify = useCallback(
-    async (modelCommitment: string) => {
+  const onRegister = useCallback(
+    async (accuracyOverride?: number) => {
       setBusy(true);
-      setError(null);
-      setStatus('Proving certifyModel…');
       try {
+        const percent =
+          accuracyOverride != null ? accuracyOverride : Number(accuracyPercent);
+        if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+          throw new Error('Accuracy must be a percentage between 0 and 100.');
+        }
         const api = await getManager().join(CONTRACT_ADDRESS);
-        await api.certifyModel(modelCommitment, Number(certThreshold));
-        setStatus('Model certified on-chain.');
+        await api.registerModel(percentToBps(percent));
         await refresh();
       } catch (e) {
-        setError(friendlyError(e));
-        setStatus(null);
+        throw new Error(friendlyError(e));
       } finally {
         setBusy(false);
       }
     },
-    [getManager, certThreshold, refresh],
+    [getManager, accuracyPercent, refresh],
+  );
+
+  const onCertify = useCallback(
+    async (modelCommitment: string, thresholdOverride?: number) => {
+      setBusy(true);
+      try {
+        const percent =
+          thresholdOverride != null ? thresholdOverride : Number(certThresholdPercent);
+        if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+          throw new Error('Threshold must be a percentage between 0 and 100.');
+        }
+        const api = await getManager().join(CONTRACT_ADDRESS);
+        await api.certifyModel(modelCommitment, percentToBps(percent));
+        await refresh();
+      } catch (e) {
+        throw new Error(friendlyError(e));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [getManager, certThresholdPercent, refresh],
   );
 
   const onProveOwnership = useCallback(
     async (modelCommitment: string) => {
       setBusy(true);
-      setError(null);
-      setStatus('Proving proveOwnership…');
       try {
         const api = await getManager().join(CONTRACT_ADDRESS);
         await api.proveOwnership(modelCommitment);
-        setStatus('Ownership proven without revealing provider secret.');
       } catch (e) {
-        setError(friendlyError(e));
-        setStatus(null);
+        throw new Error(friendlyError(e));
       } finally {
         setBusy(false);
       }
@@ -184,13 +180,11 @@ export function ProofOfMindProvider({ children }: { children: ReactNode }) {
       unshieldedAddress,
       contractAddress: CONTRACT_ADDRESS,
       entries,
-      accuracyInput,
-      setAccuracyInput,
-      certThreshold,
-      setCertThreshold,
+      accuracyPercent,
+      setAccuracyPercent,
+      certThresholdPercent,
+      setCertThresholdPercent,
       busy,
-      error,
-      status,
       secrets,
       modelPreview: previews.model,
       providerPreview: previews.provider,
@@ -205,11 +199,9 @@ export function ProofOfMindProvider({ children }: { children: ReactNode }) {
       connected,
       unshieldedAddress,
       entries,
-      accuracyInput,
-      certThreshold,
+      accuracyPercent,
+      certThresholdPercent,
       busy,
-      error,
-      status,
       secrets,
       previews,
       refresh,

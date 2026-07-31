@@ -334,15 +334,20 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz#9bdad8176be7811ad148d1f8772359041f46c6c5"
   integrity sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA==
 
-"@fontsource-variable/outfit@^5.3.0":
+"@fontsource/fraunces@^5.3.0":
   version "5.3.0"
-  resolved "https://registry.yarnpkg.com/@fontsource-variable/outfit/-/outfit-5.3.0.tgz#1106061dd413b77faf72a8acfb635b01fc33d362"
-  integrity sha512-fPb5XnYK0k7SbR++HEmm4+ZqDszmLKQ+sPRUr8oQ/KNC0vy6r6hazJFe8iYozv4cqlHbvJ/JECkJWrfDodUMVQ==
+  resolved "https://registry.yarnpkg.com/@fontsource/fraunces/-/fraunces-5.3.0.tgz#8ef93c70ddbf0fed0e801d7927d324229c646e80"
+  integrity sha512-LEHTOBiZufQzAvnAe2rZ8ZknbDS28Q9kzwb0L+gZJEmjLGr8hhZ/5NuHXwDuHBWhVXYoiGGXmrb0H6Ko/RrHTg==
 
-"@fontsource/jetbrains-mono@^5.3.0":
+"@fontsource/ibm-plex-mono@^5.3.0":
   version "5.3.0"
-  resolved "https://registry.yarnpkg.com/@fontsource/jetbrains-mono/-/jetbrains-mono-5.3.0.tgz#87bfd849f24b536ed72e89b56ae0d42223697f74"
-  integrity sha512-fqDfB5I9f1p1TV486aUgB9t8zP84P0O1FtQR5Ol9vjwPy+S+EIGlVYm1cvj2W5shcZMTg2nZFdVMoH5wFu8a1A==
+  resolved "https://registry.yarnpkg.com/@fontsource/ibm-plex-mono/-/ibm-plex-mono-5.3.0.tgz#1879699d104602d5331e28e103f33c3b1b766b17"
+  integrity sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==
+
+"@fontsource/sora@^5.3.0":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@fontsource/sora/-/sora-5.3.0.tgz#13bbc152d4a18d7531b6fbe4b3dfa6927f793c42"
+  integrity sha512-SqW3OpKxxfKvxDLPlbdrWf2KooPfbd+W3jaYn483o+Y/JrmU87vjFPNptDqwP428c3vY+gnranLhjcbRaXB0Jw==
 
 "@graphql-typed-document-node/core@^3.1.1", "@graphql-typed-document-node/core@^3.2.0":
   version "3.2.0"

@@ -16,11 +16,14 @@ const midnightAliases = Object.fromEntries(
     .map((pkg) => [`@midnight-ntwrk/${pkg}`, path.join(midnightRoot, pkg)]),
 );
 
+const devPort = Number(process.env.PORT) || 3010;
+
 export default defineConfig({
   define: {
     global: 'globalThis',
   },
-  plugins: [react(), wasm(), topLevelAwait(), tailwindcss()],
+  // react() after wasm/TLA — otherwise Fast Refresh preamble can break (getRefreshReg).
+  plugins: [wasm(), topLevelAwait(), react(), tailwindcss()],
   resolve: {
     alias: {
       '@contracts': path.resolve(__dirname, '../contracts'),
@@ -41,7 +44,16 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    // Unique port: 3000/3001 collide when multiple Midnight dApps run (breaks HMR WS).
+    port: devPort,
+    strictPort: true,
+    host: '127.0.0.1',
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: devPort,
+      clientPort: Number(process.env.HMR_CLIENT_PORT) || devPort,
+    },
     fs: { allow: ['..'] },
   },
   optimizeDeps: {

@@ -1,21 +1,53 @@
+@import '@fontsource/fraunces/400.css';
+@import '@fontsource/fraunces/500.css';
+@import '@fontsource/fraunces/600.css';
+@import '@fontsource/fraunces/700.css';
+@import '@fontsource/sora/400.css';
+@import '@fontsource/sora/500.css';
+@import '@fontsource/sora/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
 @import 'tailwindcss';
-@import '@fontsource-variable/outfit';
-@import '@fontsource/jetbrains-mono/400.css';
-@import '@fontsource/jetbrains-mono/500.css';
+
+@theme {
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Sora', ui-sans-serif, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-pom-bg: #101418;
+  --color-pom-elevated: #171c21;
+  --color-pom-soft: #1e252c;
+  --color-pom-ink: #e8ecef;
+  --color-pom-muted: #8b969f;
+  --color-pom-line: #2a333b;
+  --color-pom-accent: #3d9b74;
+  --color-pom-accent-ink: #0a1a14;
+  --color-pom-danger: #c45c5c;
+  --color-pom-day: #f2f5f4;
+  --color-pom-day-ink: #152018;
+  --color-pom-day-muted: #5a6b63;
+  --color-pom-day-line: #d5ddd9;
+}
 
 :root {
-  --pom-bg: #0e1114;
-  --pom-bg-elevated: #161b20;
-  --pom-bg-soft: #1c2329;
+  --pom-bg: #101418;
+  --pom-bg-elevated: #171c21;
+  --pom-bg-soft: #1e252c;
   --pom-ink: #e8ecef;
   --pom-muted: #8b969f;
   --pom-line: #2a333b;
   --pom-accent: #3d9b74;
   --pom-accent-ink: #0a1a14;
   --pom-danger: #c45c5c;
-  --pom-radius: 10px;
-  --font-sans: 'Outfit Variable', Outfit, ui-sans-serif, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --pom-day: #f2f5f4;
+  --pom-day-ink: #152018;
+  --pom-day-muted: #5a6b63;
+  --pom-day-line: #d5ddd9;
+  --pom-radius: 4px;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Sora', ui-sans-serif, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --nav-h: 64px;
 }
 
 *,
@@ -37,6 +69,18 @@ body {
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  line-height: 1.5;
+}
+
+/* Subtle neural lattice grain */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 #root {
@@ -49,7 +93,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -67,9 +112,177 @@ code,
   font-family: var(--font-mono);
 }
 
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--pom-accent) 35%, transparent);
   color: var(--pom-ink);
+}
+
+html.compact .py-12 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+html.compact .md\:py-16 {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+/* —— Lab daytime surfaces (B2B clinical) —— */
+.surface-day {
+  background: var(--pom-day);
+  color: var(--pom-day-ink);
+}
+
+.surface-day .text-muted,
+.surface-day .pom-muted {
+  color: var(--pom-day-muted);
+}
+
+.surface-day .pom-line {
+  border-color: var(--pom-day-line);
+}
+
+/* —— Commitment seal pulse —— */
+@keyframes seal-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--pom-accent) 0%, transparent);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--pom-accent) 12%, transparent);
+    transform: scale(1.02);
+  }
+}
+
+.anim-seal-pulse {
+  animation: seal-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes seal-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.35) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.96) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.anim-seal-stamp {
+  animation: seal-stamp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* —— Registry fade-in —— */
+@keyframes registry-fade {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-registry-fade {
+  animation: registry-fade 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-registry-fade-delay-1 {
+  animation-delay: 0.06s;
+}
+.anim-registry-fade-delay-2 {
+  animation-delay: 0.12s;
+}
+.anim-registry-fade-delay-3 {
+  animation-delay: 0.18s;
+}
+.anim-registry-fade-delay-4 {
+  animation-delay: 0.24s;
+}
+
+/* —— Certify stamp —— */
+@keyframes certify-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) rotate(-14deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.08) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.anim-certify-stamp {
+  animation: certify-stamp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* —— Accuracy slider —— */
+.accuracy-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pom-accent) 35%, var(--pom-line)),
+    var(--pom-accent)
+  );
+  outline: none;
+}
+
+.accuracy-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--pom-accent);
+  border: 2px solid var(--pom-accent-ink);
+  cursor: pointer;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pom-accent) 20%, transparent);
+}
+
+.accuracy-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--pom-accent);
+  border: 2px solid var(--pom-accent-ink);
+  cursor: pointer;
+}
+
+.surface-day .accuracy-slider {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pom-accent) 25%, var(--pom-day-line)),
+    var(--pom-accent)
+  );
+}
+
+/* —— Lattice hero overlay —— */
+.hero-lattice {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--pom-accent) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--pom-accent) 8%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 70% 40%, black 20%, transparent 75%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -83,5 +296,12 @@ code,
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .anim-seal-pulse,
+  .anim-seal-stamp,
+  .anim-registry-fade,
+  .anim-certify-stamp {
+    animation: none !important;
   }
 }

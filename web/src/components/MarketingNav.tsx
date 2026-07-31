@@ -1,12 +1,17 @@
 import { NavLink } from 'react-router-dom';
-
-const links = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/app', label: 'App', end: false },
-  { to: '/registry', label: 'Registry', end: false },
-];
+import { useProgress } from './ProgressProvider';
 
 export function MarketingNav() {
+  const { state } = useProgress();
+  const enterTo = state.onboarded ? '/home' : '/onboarding';
+
+  const links = [
+    { to: '/', label: 'Home', end: true },
+    { to: enterTo, label: 'Enter', end: false },
+    { to: '/registry', label: 'Registry', end: false },
+    { to: '/help', label: 'Help', end: false },
+  ];
+
   return (
     <header className="relative z-20 mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-4 md:px-8">
       <NavLink to="/" className="font-medium tracking-tight text-[var(--pom-ink)]">
@@ -15,7 +20,7 @@ export function MarketingNav() {
       <nav className="flex items-center gap-1 md:gap-2" aria-label="Primary">
         {links.map((link) => (
           <NavLink
-            key={link.to}
+            key={link.label}
             to={link.to}
             end={link.end}
             className={({ isActive }) =>
