@@ -1,0 +1,21 @@
+fahmin@Defiance15:~/midnight/proof-of-mind$ yarn test:local
+yarn run v1.22.22
+$ MIDNIGHT_NETWORK=undeployed yarn test
+$ NODE_OPTIONS='--experimental-vm-modules' vitest run
+
+ RUN  v3.2.4 /home/fahmin/midnight/proof-of-mind
+
+ ✓ src/test/proof-of-mind.test.ts (4)
+   ✓ Proof of Mind Contract (4)
+     ✓ deploys the contract
+     ✓ registers a model with disclosed commitments only
+     ✓ proves provider ownership without revealing secrets
+     ✓ certifies model meets a minimum accuracy threshold
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  03:13:36
+   Duration  51.08s (transform 405ms, setup 0ms, collect 1.88s, tests 48.62s, environment 0ms, prepare 91ms)
+
+Done in 51.93s.
+fahmin@Defiance15:~/midnight/proof-of-mind$

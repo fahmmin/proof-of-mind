@@ -1,118 +1,130 @@
 # Proof of Mind
 
-ZK-verified AI benchmarking on [Midnight Network](https://midnight.network). Model providers register benchmark claims using private witnesses. Model fingerprints and provider secrets never touch the ledger. Only cryptographic commitments and disclosed metrics appear on-chain.
+ZK-verified AI benchmarking on [Midnight Network](https://midnight.network). Model providers register benchmark claims with private witnesses — fingerprints and secrets never touch the ledger. Only commitments and disclosed metrics appear on-chain.
 
-## Product idea
+**Live dApp (Preview):** [https://proof-of-mind.vercel.app](https://proof-of-mind.vercel.app)
 
-When an AI company claims "94% accuracy on medical diagnosis," buyers must trust them blindly. **Proof of Mind** is a privacy-first benchmarking registry: providers commit to a model fingerprint locally, disclose only a hash and accuracy metric on-chain, and prove ownership via ZK circuits.
+| Level | Codename | Status |
+|-------|----------|--------|
+| L1 | New Moon | Complete |
+| L2 | Waxing Crescent | Complete |
+| **L3** | **First Quarter** | **Complete** |
 
-## Prerequisites
+## Screenshots
 
-- **Node.js 22+** (`nvm use 22`)
-- **Docker** (local devnet + proof server)
-- **Compact compiler** 0.31.1 (`compact update 0.31.1`)
-- **Yarn 1.22**
-- **Lace** or **1AM** wallet extension (for the web UI, network set to undeployed)
+### Landing (desktop)
 
-### Install Compact
+![Landing desktop](docs/screenshots/frontend-landing-desktop.png)
 
-```bash
-curl --proto '=https' --tlsv1.2 -sSf \
-  https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
-source $HOME/.local/bin/env
-compact update 0.31.1
-compact compile --version
+### Model registry (desktop)
+
+![Registry desktop](docs/screenshots/frontend-app-desktop.png)
+
+### Landing (mobile)
+
+![Landing mobile](docs/screenshots/frontend-landing-mobile.png)
+
+## Preview deployment
+
+| Field | Value |
+|-------|--------|
+| Network | `preview` |
+| Frontend | [proof-of-mind.vercel.app](https://proof-of-mind.vercel.app) |
+| Contract address | `c27a3d1428ea26c5c1014bc05d19c9e5764fd9467f0157f5aedafef76d699bd1` |
+| Indexer | `https://indexer.preview.midnight.network/api/v4/graphql` |
+| ZK assets | `/zk/proof-of-mind` |
+
+Config source: [`web/src/config.ts`](web/src/config.ts). Connect **Lace** or **1AM** on **preview**.
+
+## Test output (4 tests passing)
+
+```text
+fahmin@Defiance15:~/midnight/proof-of-mind$ yarn test:local
+yarn run v1.22.22
+$ MIDNIGHT_NETWORK=undeployed yarn test
+$ NODE_OPTIONS='--experimental-vm-modules' vitest run
+
+ RUN  v3.2.4 /home/fahmin/midnight/proof-of-mind
+
+ ✓ src/test/proof-of-mind.test.ts (4)
+   ✓ Proof of Mind Contract (4)
+     ✓ deploys the contract
+     ✓ registers a model with disclosed commitments only
+     ✓ proves provider ownership without revealing secrets
+     ✓ certifies model meets a minimum accuracy threshold
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  03:13:36
+   Duration  51.08s
+
+Done in 51.93s.
 ```
 
-## Setup
+Full dump: [`docs/screenshots/test-passing.txt`](docs/screenshots/test-passing.txt).
+
+CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — compile + `yarn test:local` on push.
+
+## Privacy claim
+
+| Data | Visibility | Where |
+|------|------------|-------|
+| Model fingerprint | **Private** | Witness + local private state |
+| Provider secret | **Private** | Witness only |
+| Model commitment | **Public** | On-chain `models` map key |
+| Provider commitment | **Public** | `ModelEntry.providerCommitment` |
+| Accuracy (bps) | **Public** | `ModelEntry.accuracyBps` |
+| Certification threshold | **Public** | `certifications` map |
+
+**What an observer learns:** a provider registered a commitment at a disclosed accuracy (and optional certified floor). They cannot recover weights, fingerprints, or test prompts from chain data alone.
+
+## Circuits
+
+| Circuit | Purpose |
+|---------|---------|
+| `registerModel(accuracyBps)` | Commit fingerprint; disclose accuracy |
+| `proveOwnership(modelCommitment)` | Provider ZK auth |
+| `certifyModel(modelCommitment, minAccuracyBps)` | Prove disclosed accuracy ≥ threshold |
+
+## Quick start
 
 ```bash
-yarn setup:l1
-```
-
-Or manually:
-
-```bash
+nvm use 22
 yarn install
 yarn compile
 yarn env:up
 yarn test:local
-```
-
-If port 6300 is in use, `yarn env:up` starts node + indexer only; keep a proof server on `http://127.0.0.1:6300`.
-
-## Deploy (undeployed / local only)
-
-```bash
-yarn env:up
-yarn deploy:undeployed
-```
-
-Uses the pre-funded genesis wallet on local devnet. Address is written to [`deployment.json`](deployment.json).
-
-Current undeployed address:
-
-`47d43e9968561ec970c53aa1063cf65a68bad2be995369e4a5969aee06644dc3`
-
-## Frontend (Level 2)
-
-Multi-page React app under `web/`:
-
-| Route | Purpose |
-|-------|---------|
-| `/` | Storyline landing (fingerprint registry narrative) |
-| `/app` | Wallet connect/disconnect, deploy/join, `registerModel` / `proveOwnership` |
-| `/registry` | Public indexer registry + privacy split demo + `certifyModel` |
-
-```bash
-nvm use 22
 yarn sync:zk
-yarn web:dev
+yarn web:dev          # http://127.0.0.1:3010
 ```
 
-Open http://localhost:3000. Connect **Lace** or **1AM** on **undeployed**, then deploy or paste the address from `deployment.json`.
-
-Wallet detection uses `window.midnight` (prefers `mnLace`, then `1AM`, then any connectable injector). No wallet UUID is hardcoded.
-
-### Circuits wired in the UI
-
-- `registerModel(accuracyBps)`
-- `proveOwnership(modelCommitment)`
-- `certifyModel(modelCommitment, minAccuracyBps)`
-
-## Public state vs private witness
-
-| Data | Visibility | Stored where |
-|------|------------|--------------|
-| Model fingerprint (weights hash) | **Private** | Witness + local private state |
-| Provider secret | **Private** | Witness only |
-| Model commitment `persistentHash(fingerprint)` | **Public** | On-chain `models` map key |
-| Provider commitment | **Public** | `ModelEntry.providerCommitment` |
-| Accuracy (basis points) | **Public** | `ModelEntry.accuracyBps` |
-
-**What an observer learns:** a provider registered a commitment at a disclosed accuracy. They **cannot** recover model weights, raw fingerprints, or test prompts from chain data alone.
+| Script | Purpose |
+|--------|---------|
+| `yarn test:local` | Integration tests on undeployed |
+| `yarn deploy:preview` | Deploy contract to preview |
+| `yarn web:build` | Production Vite build (`web/` → Vercel root) |
+| `yarn sync:zk` | Copy managed ZK assets into `web/public` |
 
 ## Project structure
 
 ```
-contracts/          # Compact + managed ZK artifacts
-src/                # Headless wallet, deploy, vitest
-web/                # React 19 + Vite multi-page UI
-scripts/sync-zk-assets.mjs
-deployment.json
+contracts/   Compact + managed ZK artifacts
+api/         Shared contract helpers
+src/         Wallet, deploy, vitest, CLI
+web/         React 19 + Vite dApp (Vercel root directory)
+docs/        Screenshots + Level 3 evidence
 ```
 
-## Screenshots
+## Toolchain
 
-### `yarn compile`
-
-![yarn compile](docs/screenshots/compile-circuits.png)
-
-### `yarn deploy`
-
-![yarn deploy](docs/screenshots/deploy-undeployed.png)
-
-See [`SUBMISSION.md`](SUBMISSION.md) for the Level 1 checklist and [`ROADMAP.md`](ROADMAP.md) for later stages.
+| Component | Version |
+|-----------|---------|
+| Node.js | 22+ |
+| Compact | 0.31.1 |
+| compact-runtime | 0.16.0 |
+| compact-js | 2.5.1 |
+| midnight-js | 4.1.1 |
+| ledger-v8 | 8.1.0 |
 
 ## License
 
