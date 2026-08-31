@@ -131,3 +131,56 @@ docs/        Screenshots + Level 3 evidence
 ## License
 
 MIT
+
+## Idea (level-pack section)
+
+ZK-verified AI benchmarking on [Midnight Network](https://midnight.network). Model providers register benchmark claims with private witnesses — fingerprints and secrets never touch the ledger. Only commitments and disclosed metrics appear on-chain.
+
+**Live dApp (Preview):** [https://proof-of-mind.vercel.app](https://proof-of-mind.vercel.app)  
+**Live demo video:** [Watch on YouTube](https://youtu.be/jwOxn-CEkBo)
+
+| Level | Codename | Status |
+|-------|----------|--------|
+| L1 | New Moon | Complete |
+| L2 | Waxing Crescent | Complete |
+| **L3** | **First Quarter** | **Complete** |
+
+## Setup (level-pack section)
+
+```bash
+# 1. install toolchain (compact, docker, node 22, yarn)
+# 2. bring up the local midnight stack
+node .claude/skills/midnight-level-pack/scripts/midnight-up.mjs --project .
+# 3. compile the contract
+# 4. deploy
+yarn deploy:undeployed
+# 5. run the web
+yarn web:dev
+# 6. audit
+node .claude/skills/midnight-level-pack/scripts/midnight-audit.mjs --project . --target-level 3
+```
+
+## Privacy Model (level-pack section)
+
+The contract's public ledger carries only what the system needs to make itself auditable: aggregate state, epoch counters, public roots, and any commitment the contract chose to disclose. The private witness and the local private state hold everything else — identity, payloads, sealed bids, individual positions. Selective disclosure via `disclose()` is the boundary between the two.
+
+| observer can see | observer cannot see |
+|------------------|---------------------|
+| aggregate state, epoch counters, public roots, and the disclosed subset chosen by the contract | identity, payloads, sealed bids, individual positions, witness values, and any local private state |
+| whether a proof of solvency / participation / threshold was produced for the current epoch | the contents that fed the proof (only the proof itself is public) |
+| a count of fills, votes, registrations, or claims | who participated in any single fill, vote, registration, or claim |
+| an aggregate eligibility nullifier root | which member satisfied the membership check |
+| the on-chain clearing flag of an auction or liquidation | the bid vector and the winning bid until the contract chooses to disclose them |
+
+
+## Architecture (level-pack section)
+
+1. **Compact contract** — circuits and ledger.
+2. **Node-side API** — providers, wallet, deploy, CLI, tests.
+3. **Browser shell** — multi-page app, Lace wallet, debug drawer.
+
+## Links
+
+- Live demo: https://proof-of-mind-midnight.vercel.app _(placeholder)_
+- X profile: https://x.com/proof-of-mind-midnight _(placeholder — see docs/x-profile.md)_
+- users.md / feedback.md: PLACEHOLDER opt-out per session instructions
